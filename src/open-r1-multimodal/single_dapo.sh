@@ -1,4 +1,4 @@
-python src/open_r1/grpo.py \
+python src/open_r1/dapo.py \
     --output_dir checkpoints/testQwenRun \
     --model_name_or_path Qwen/Qwen2.5-VL-3B-Instruct \
     --dataset_name leonardPKU/clevr_cogen_a_train \
