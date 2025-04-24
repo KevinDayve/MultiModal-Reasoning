@@ -137,7 +137,10 @@ class Qwen2VLDapoTrainer(Trainer):
         min_pixels: Optional[int] = 3136,
         attn_implementation: str = 'flash_attention_2',
         epsilon_low: float = 0.2,
-        epsilon_high: float = 0.28 #Clipping bounds for the reward function.
+        epsilon_high: float = 0.28, #Clipping bounds for the reward function.
+        overlong_penalty_enabled: bool = True,
+        overlong_buffer_len: int = 8,
+        overlong_penalty_factor: float = 1.0, #Penalty factor for the overlong penalty. Can try gentler penalties.
     ):
         #Arguments.
         if args is None:
@@ -286,6 +289,9 @@ class Qwen2VLDapoTrainer(Trainer):
         )
         self.epsilon_low = epsilon_low #Lower clipping bound
         self.epsilon_high = epsilon_high #Upper clipping bound
+        self.overlong_penalty_enabled = overlong_penalty_enabled
+        self.overlong_buffer_len = overlong_buffer_len
+        self.overlong_penalty_factor = overlong_penalty_factor
 
         model.warnings_issued['estimate_tokens'] = True
 
@@ -468,6 +474,23 @@ class Qwen2VLDapoTrainer(Trainer):
                 rewards_per_func[:, i] = torch.tensor(output_reward_func, dtype=torch.float32, device=device)
 
         rewards = rewards_per_func.sum(dim=1)
+        #Soft overlong penalty support. ()
+
+        if hasattr(self, "overlong_penalty_enabled") and self.overlong_penalty_enabled:
+            overlong_buffer_len = getattr(self, "overlong_buffer_len", 8)
+            penalty_factor = getattr(self, "overlong_penalty_factor", 1.0)
+
+            expected_length = self.max_completion_length - overlong_buffer_len
+            actual_length = completion_mask.sum(1).float()
+            exceed_length = actual_length - expected_length
+
+            #Calculate the penalty
+            overlong_penalty = torch.zeros_like(rewards, device=device)
+            mask = (exceed_length > 0) & (exceed_length <= overlong_buffer_len)
+            overlong_penalty[mask] = (exceed_length[mask] / overlong_buffer_len) * penalty_factor
+            overlong_penalty[exceed_length > overlong_buffer_len] = -penalty_factor
+            rewards += overlong_penalty
+            self._metrics["overlong_penalty"].append(overlong_penalty.mean().item())
 
         #Compute advantages.
         #Empty the cache
