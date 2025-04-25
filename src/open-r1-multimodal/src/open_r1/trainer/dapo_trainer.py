@@ -287,6 +287,7 @@ class Qwen2VLDapoTrainer(Trainer):
             pad_token_id=pad_token_id,
             # padding_side='left', #Doesn't work for the generation config.
         )
+        #DAPO specific arguments.
         self.epsilon_low = epsilon_low #Lower clipping bound
         self.epsilon_high = epsilon_high #Upper clipping bound
         self.overlong_penalty_enabled = overlong_penalty_enabled
