@@ -37,8 +37,8 @@
 
 **Contributors**:
 
-<a href="https://github.com/Deep-Agent/R1-V/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Deep-Agent/R1-V&max=30" />
+<a href="https://github.com/KevinDayve/MultiModal-Reasoning/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=KevinDayve/MultiModal-Reasoning&max=30" />
 </a>
 
 
