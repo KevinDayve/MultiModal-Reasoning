@@ -2,6 +2,10 @@
 
 ![image](https://github.com/user-attachments/assets/c52a448f-d666-4ca6-958b-86267d56de0e) 
 
+<p align="center">
+<a href="https://github.com/Deep-Agent/R1-V/releases"><img alt="GitHub release" src="https://img.shields.io/github/release/Deep-Agent/R1-V.svg"></a>
+</p>
+
 > ### Roadmap for R1-V
 > We are building a general framework for RLVR in VLM. We believe in the power of **trenches** and **longtermism**.
 >
@@ -12,13 +16,10 @@
 > Welcome Ideas and Contribution. Stay tuned!
 
 
-1. We firstly reveal that **Reinforcement Learning with Verifiable Rewards (RLVR)** outperforms chain-of-thought supervised fine-tuning (CoT-SFT) in both **effectiveness and out-of-distribution (OOD) robustness** for vision language models.
+**Blogs:**
 
-2. In our experiment, we **incentivize** VLMs to learn **generalizable** visual counting abilities, rather than overfitting to the training set.
 
-3. The 2B model outperforms the 72B model in OOD tests within just **100** training steps.
-
-4. The training was conducted on 8 A100 GPUs for **30 minutes, costing $2.62**.
+[🎯 RLVR in Vision Language Models: Findings, Questions and Directions](https://deepagent.notion.site/rlvr-in-vlms)
 
 **Resources:** 
 
@@ -37,7 +38,7 @@
 **Contributors**:
 
 <a href="https://github.com/Deep-Agent/R1-V/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Deep-Agent/R1-V" />
+  <img src="https://contrib.rocks/image?repo=Deep-Agent/R1-V&max=30" />
 </a>
 
 
@@ -46,6 +47,8 @@
 
 ### Updates
 
+- 2025-02-27: vLLM trainer supports Qwen2.5-VL now, refer to `./src/scripts/run_grpo_vllm_qwen25vl.sh` for script and env update.
+- 2025-02-21: We write a [blog post](https://deepagent.notion.site/rlvr-in-vlms) summarizing the main findings and questions in our visual RLVR experimetns, check it out!
 - 2025-02-12: We fixed the batched decoding error. The orignial RL training scirpt now is 3x speeded up.
 - 2025-02-12: R1-V now supports vLLM to accelerate training (`pip install vllm==0.7.2` before use) and SFT.
 - 2025-02-11: R1-V now supports Qwen2.5-VL and [GEOQA](https://arxiv.org/abs/2312.11370) task.
@@ -54,17 +57,16 @@
 - 2025-02-03: We curate and upload some verified Deepseek-R1 visual reasoning traces with some special tricks (see `R1-V/src/distill_r1/`). Current training code does not rely on it, feel free to explore.
 - 2025-02-03: We release the R1-V repo.
 
+
 ### For contributors
 - Our top development priority is addressing the issues marked with `help wanted` labels, and we welcome ideas/PRs from the community to help solve them.
 
 ---
 
-
 ![Image](https://github.com/user-attachments/assets/e86a3ff2-a9c6-4548-8200-6c3c382d60e6)
 
 ![Image](https://github.com/user-attachments/assets/b3512920-ef30-4d6d-9bfe-c64e4570a067)
-
-![image](https://github.com/user-attachments/assets/42b79f44-1c09-4c22-bad9-17ec2a0a1d10)
+*Note: In our later experiment, we found that letting the 2b base model directly output the result instead of following `<think></think><answer></answer>` would lead to a much higher score (86%) on SuperClevr. It suggests that enforcing Chain-of-Thought reasoning may be not only unnecessary but potentially detrimental to the 2B model performance.*
 
 ![image](https://github.com/user-attachments/assets/f5191b1e-dde2-42b7-9ec9-10f7f6213c12)
 
@@ -72,8 +74,15 @@
 ## Setup
 
 ```bash
+conda create -n r1-v python=3.11 
+conda activate r1-v
+
 bash setup.sh
 ```
+
+> [!NOTE] 
+> If you meet bug when running the script, first try align your environments with `./src/requirements.txt`
+
 
 ### Supported Models
 
@@ -99,7 +108,7 @@ bash setup.sh
 ### GRPO
 
 ```bash
-cd src/open-r1-multimodal
+cd src/r1-v
 
 export DEBUG_MODE="true" # Enable Debug if you want to see the rollout of model during RL
 export LOG_PATH="./debug_log_2b.txt"
@@ -135,7 +144,7 @@ torchrun --nproc_per_node="8" \
 > [!NOTE] 
 > 1. To reproduce the result, keep the per_device_train_batch_size to 1 for now, as there is a revealed bug about batched training. See the [reproduction report](https://github.com/Deep-Agent/R1-V/issues/4#issuecomment-2633348354) here. We realize it is important for effiency and are working on solving it with the community.
 > 2. If you meet **OOM Error**, you can try reduce `--num_generations`
-> 3. To use vLLM to speed up, please refer to this [script](https://github.com/Deep-Agent/R1-V/blob/main/src/scripts/run_grpo_vllm.sh), currently it only supports Qwen2VL model series.
+> 3. To use vLLM to speed up, please refer to this [script](https://github.com/Deep-Agent/R1-V/blob/main/src/scripts/run_grpo_vllm.sh).
 
 
 ### SFT
@@ -143,7 +152,7 @@ torchrun --nproc_per_node="8" \
 We also provide SFT code, please follow the script and edit the config to customize the sft task.
 
 ```bash
-accelerate launch --config_file src/open-r1-multimodal/configs/zero2.yaml src/open-r1-multimodal/src/open_r1/sft.py --config src/open-r1-multimodal/configs/qwen2vl_sft_config.yaml 
+accelerate launch --config_file src/r1-v/configs/zero2.yaml src/r1-v/src/open_r1/sft.py --config src/r1-v/configs/qwen2vl_sft_config.yaml 
 ```
 
 ## Evaluation
@@ -189,8 +198,8 @@ cd Geo170K
 unzip images.zip
 
 
-# change the model path in the script
-python test_qwen2vl_geoqa.py 
+# Evaluation Script
+python test_qwen2vl_geoqa.py
 
 # tested scores: 
 # Qwen2VL-7B-Instruct: 30.63%
@@ -198,6 +207,11 @@ python test_qwen2vl_geoqa.py
 
 # Qwen2.5VL-3B-Instruct: 35.41%
 # Qwen2.5VL-3B-Instruct-GRPO-1epochs: 47.48%
+```
+
+To enable faster inference with multiple GPUs, you could also use the script in `R1-V/src/scripts/test_grpo_geoqa_multigpu.sh`
+```
+bash src/scripts/test_grpo_geoqa_multigpu.sh
 ```
 
 
@@ -221,7 +235,3 @@ We sincerely thank [DeepSeek](https://github.com/deepseek-ai/DeepSeek-R1), [Open
   year         = {2025}
 }
 ```
-
-
-
-
